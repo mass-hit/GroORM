@@ -2,15 +2,17 @@ package session
 
 import (
 	"GroORM/log"
+	"GroORM/schema"
 	"database/sql"
 	"strings"
 )
 
 // Session keep a database connection
 type Session struct {
-	db      *sql.DB
-	sql     strings.Builder
-	sqlVars []interface{}
+	db       *sql.DB
+	refTable *schema.Schema
+	sql      strings.Builder
+	sqlVars  []interface{}
 }
 
 // New creates a new Session

@@ -1,6 +1,7 @@
 package session
 
 import (
+	"GroORM/clause"
 	"GroORM/log"
 	"GroORM/schema"
 	"database/sql"
@@ -11,6 +12,7 @@ import (
 type Session struct {
 	db       *sql.DB
 	refTable *schema.Schema
+	clause   clause.Clause
 	sql      strings.Builder
 	sqlVars  []interface{}
 }
@@ -24,6 +26,7 @@ func New(db *sql.DB) *Session {
 func (s *Session) Clear() {
 	s.sql.Reset()
 	s.sqlVars = nil
+	s.clause = clause.Clause{}
 }
 
 // Exec executes a non-query SQL

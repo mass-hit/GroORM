@@ -16,9 +16,20 @@ type Field struct {
 
 // Schema represents table
 type Schema struct {
-	Model  interface{}
-	Name   string
-	Fields []*Field
+	Model      interface{}
+	Name       string
+	Fields     []*Field
+	FieldNames []string
+}
+
+// RecordValues extracts the values of fields
+func (s *Schema) RecordValues(dest interface{}) []interface{} {
+	destValue := reflect.Indirect(reflect.ValueOf(dest))
+	var fieldValues []interface{}
+	for _, field := range s.Fields {
+		fieldValues = append(fieldValues, destValue.FieldByName(field.Name).Interface())
+	}
+	return fieldValues
 }
 
 // Parse constructs a Schema.
@@ -39,6 +50,7 @@ func Parse(dest interface{}) *Schema {
 				field.Tag = v
 			}
 			schema.Fields = append(schema.Fields, field)
+			schema.FieldNames = append(schema.FieldNames, field.Name)
 		}
 	}
 	return schema

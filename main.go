@@ -30,4 +30,20 @@ func main() {
 	if err := s.Find(&tests); err != nil || len(tests) != 2 {
 		log.Error("fail to find data")
 	}
+	num, err = s.Where("Name = ?", "zero").Update("Num", 2)
+	if err != nil || num != 1 {
+		log.Error("fail to update data")
+	}
+	var test Test
+	if err := s.OrderBy("Num DESC").First(&test); err != nil || test.Num != 2 {
+		log.Error("fail to find first")
+	}
+	num, err = s.Where("Num = ?", 1).Delete()
+	if err != nil || num != 1 {
+		log.Error("fail to delete data")
+	}
+	count, err := s.Count()
+	if err != nil || count != 1 {
+		log.Error("fail to count data")
+	}
 }

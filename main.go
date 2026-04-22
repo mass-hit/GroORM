@@ -2,6 +2,7 @@ package main
 
 import (
 	"GroORM/log"
+	"GroORM/session"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -16,6 +17,16 @@ var (
 	one  = &Test{Name: "one", Num: 1}
 )
 
+func (t *Test) BeforeInsert(s *session.Session) {
+	log.Info("before insert")
+	t.Num++
+}
+
+func (t *Test) AfterQuery(s *session.Session) {
+	log.Info("after query")
+	t.Name = "***"
+}
+
 func main() {
 	engine, _ := NewEngine("mysql", "root:@tcp(127.0.0.1:3306)/gro?charset=utf8")
 	defer engine.Close()
@@ -26,24 +37,8 @@ func main() {
 	if err != nil || num != 2 {
 		log.Error("fail to insert data")
 	}
-	var tests []Test
-	if err := s.Find(&tests); err != nil || len(tests) != 2 {
-		log.Error("fail to find data")
-	}
-	num, err = s.Where("Name = ?", "zero").Update("Num", 2)
-	if err != nil || num != 1 {
-		log.Error("fail to update data")
-	}
 	var test Test
-	if err := s.OrderBy("Num DESC").First(&test); err != nil || test.Num != 2 {
-		log.Error("fail to find first")
-	}
-	num, err = s.Where("Num = ?", 1).Delete()
-	if err != nil || num != 1 {
-		log.Error("fail to delete data")
-	}
-	count, err := s.Count()
-	if err != nil || count != 1 {
-		log.Error("fail to count data")
+	if err := s.OrderBy("Num").First(&test); err != nil || test.Num != 1 || test.Name != "***" {
+		log.Error("fail to call hook method")
 	}
 }

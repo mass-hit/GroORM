@@ -11,6 +11,7 @@ import (
 // Session keep a database connection
 type Session struct {
 	db       *sql.DB
+	tx       *sql.Tx
 	refTable *schema.Schema
 	clause   clause.Clause
 	sql      strings.Builder
@@ -20,6 +21,19 @@ type Session struct {
 // New creates a new Session
 func New(db *sql.DB) *Session {
 	return &Session{db: db}
+}
+
+type CommonDB interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
+func (s *Session) DB() CommonDB {
+	if s.tx != nil {
+		return s.tx
+	}
+	return s.db
 }
 
 // Clear resets the SQL builder and parameter
@@ -33,7 +47,7 @@ func (s *Session) Clear() {
 func (s *Session) Exec() (result sql.Result, err error) {
 	defer s.Clear()
 	log.Info(s.sql.String(), s.sqlVars)
-	if result, err = s.db.Exec(s.sql.String(), s.sqlVars...); err != nil {
+	if result, err = s.DB().Exec(s.sql.String(), s.sqlVars...); err != nil {
 		log.Error(err)
 	}
 	return
@@ -43,14 +57,14 @@ func (s *Session) Exec() (result sql.Result, err error) {
 func (s *Session) QueryRow() *sql.Row {
 	defer s.Clear()
 	log.Info(s.sql.String(), s.sqlVars)
-	return s.db.QueryRow(s.sql.String(), s.sqlVars...)
+	return s.DB().QueryRow(s.sql.String(), s.sqlVars...)
 }
 
 // QueryRows return multiple rows
 func (s *Session) QueryRows() (rows *sql.Rows, err error) {
 	defer s.Clear()
 	log.Info(s.sql.String(), s.sqlVars)
-	if rows, err = s.db.Query(s.sql.String(), s.sqlVars...); err != nil {
+	if rows, err = s.DB().Query(s.sql.String(), s.sqlVars...); err != nil {
 		log.Error(err)
 	}
 	return

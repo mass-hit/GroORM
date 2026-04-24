@@ -3,6 +3,7 @@ package main
 import (
 	"GroORM/log"
 	"GroORM/session"
+	"errors"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -33,12 +34,21 @@ func main() {
 	s := engine.NewSession().Model(&Test{})
 	_ = s.DropTable()
 	_ = s.CreateTable()
-	num, err := s.Insert(zero, one)
-	if err != nil || num != 2 {
-		log.Error("fail to insert data")
-	}
+	_ = s.Model(&Test{})
 	var test Test
-	if err := s.OrderBy("Num").First(&test); err != nil || test.Num != 1 || test.Name != "***" {
-		log.Error("fail to call hook method")
+	if _, err := engine.Transaction(func(s *session.Session) (interface{}, error) {
+		_, _ = s.Insert(zero, one)
+		return nil, errors.New("error")
+	}); err == nil || s.First(&test) == nil {
+		log.Error("rollback fail")
+	}
+	if _, err := engine.Transaction(func(s *session.Session) (interface{}, error) {
+		_, _ = s.Insert(zero, one)
+		return nil, nil
+	}); err != nil {
+		log.Error("commit fail")
+	}
+	if num, err := s.Count(); err != nil || num != 2 {
+		log.Error("count fail")
 	}
 }

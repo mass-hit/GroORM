@@ -20,6 +20,11 @@ type Schema struct {
 	Name       string
 	Fields     []*Field
 	FieldNames []string
+	fieldMap   map[string]*Field
+}
+
+func (s *Schema) Field(name string) *Field {
+	return s.fieldMap[name]
 }
 
 // RecordValues extracts the values of fields
@@ -37,13 +42,16 @@ func Parse(dest interface{}) *Schema {
 	modelType := reflect.Indirect(reflect.ValueOf(dest)).Type()
 	schema := &Schema{
 		Model: dest,
-		Name:  toSnakeCase(modelType.Name()),
+		// NOTE: MySQL implicitly convert identifiers to lowercase in Windows
+		Name:     toSnakeCase(modelType.Name()),
+		fieldMap: make(map[string]*Field),
 	}
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 		if !structField.Anonymous && structField.IsExported() {
 			field := &Field{
-				Name: structField.Name,
+				// NOTE: MySQL implicitly convert identifiers to lowercase in Windows
+				Name: toSnakeCase(structField.Name),
 				Type: mysql.DataTypeOf(structField.Type),
 			}
 			if v, ok := structField.Tag.Lookup("gro"); ok {
@@ -51,6 +59,7 @@ func Parse(dest interface{}) *Schema {
 			}
 			schema.Fields = append(schema.Fields, field)
 			schema.FieldNames = append(schema.FieldNames, field.Name)
+			schema.fieldMap[field.Name] = field
 		}
 	}
 	return schema
